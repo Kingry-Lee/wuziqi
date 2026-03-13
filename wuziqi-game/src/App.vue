@@ -8,9 +8,13 @@ import HistoryPanel from './components/HistoryPanel.vue'
 import { useGame } from './composables/useGame'
 import { useOnlineGame } from './composables/useOnlineGame'
 import { applyTheme, getTheme } from './logic/themes'
+import { getPipHtml } from './logic/pip'
 
-const { initGame, setConfig, getConfig, undo } = useGame()
+const { initGame, setConfig, getConfig, undo, placePiece, gameOver, isAIThinking, cells, lastMove, board } = useGame()
 const onlineGame = useOnlineGame()
+
+// 专门用于 PiP 同步的数据
+const pipData = ref({ cells: [], lastMove: null })
 
 const showSettings = ref(false)
 const showHistory = ref(false)
@@ -56,6 +60,77 @@ function adjustZoom(delta) {
   const newScale = boardScale.value + delta
   if (newScale >= 0.5 && newScale <= 2) {
     boardScale.value = newScale
+  }
+}
+
+let pipWindow = null
+
+function openPipMode() {
+  if (pipWindow && !pipWindow.closed) {
+    pipWindow.focus()
+    return
+  }
+  
+  const theme = getTheme(currentTheme.value)
+  const freshCells = board.value.cells.map(row => [...row])
+  const freshLastMove = board.value.lastMove ? { ...board.value.lastMove } : null
+  
+  pipWindow = window.open(
+    '',
+    'wuziqi-pip',
+    'width=400,height=400,top=100,left=100,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes'
+  )
+  
+  if (pipWindow) {
+    pipWindow.document.write(getPipHtml(theme, freshCells, freshLastMove))
+    pipWindow.document.close()
+  }
+}
+
+// 监听画中画窗口的点击
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'pip-click') {
+    const { row, col } = e.data
+    if (!gameOver.value && !isAIThinking.value) {
+      placePiece(row, col)
+    }
+  }
+})
+
+// 监听 board.version 变化来触发 PiP 更新
+watch(() => board.value.version, () => {
+  pipData.value = {
+    cells: board.value.cells.map(row => [...row]),
+    lastMove: board.value.lastMove ? JSON.parse(JSON.stringify(board.value.lastMove)) : null
+  }
+  if (pipWindow && !pipWindow.closed) {
+    updatePipBoard()
+  }
+}, { immediate: true })
+
+watch(() => board.value.lastMove, () => {
+  updatePipBoard()
+})
+
+watch(currentTheme, () => {
+  if (pipWindow && !pipWindow.closed) {
+    const theme = getTheme(currentTheme.value)
+    pipWindow.document.write(getPipHtml(theme, pipData.value.cells, pipData.value.lastMove))
+    pipWindow.document.close()
+  }
+})
+
+function updatePipBoard() {
+  if (!pipWindow || pipWindow.closed) return
+  try {
+    const message = { 
+      type: 'pip-update', 
+      cells: JSON.parse(JSON.stringify(pipData.value.cells)),
+      lastMove: pipData.value.lastMove ? JSON.parse(JSON.stringify(pipData.value.lastMove)) : null
+    }
+    pipWindow.postMessage(message, '*')
+  } catch (e) {
+    console.error('[PiP] postMessage error:', e)
   }
 }
 
@@ -184,6 +259,7 @@ provide('currentTheme', currentTheme)
         <button @click="adjustZoom(0.1)">+</button>
         <span>{{ Math.round(boardScale * 100) }}%</span>
         <button @click="adjustZoom(-0.1)">-</button>
+        <button class="pip-btn" @click="openPipMode" title="画中画">⧉</button>
       </div>
       
       <aside class="sidebar" v-if="!zenMode">
@@ -418,6 +494,11 @@ html.zen-mode, html.zen-mode body {
 
 .zen-zoom-controls button:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.zen-zoom-controls .pip-btn {
+  font-size: 18px;
+  margin-left: 8px;
 }
 
 /* Zen 模式四角按钮 */

@@ -6,10 +6,11 @@ export class Board {
     this.size = size
     this.cells = this.createEmptyBoard(size)
     this.moveHistory = []
-    this.currentPlayer = 1 // 1: 黑棋, 2: 白棋
+    this.currentPlayer = 1
     this.gameOver = false
     this.winner = null
-    this.lastMove = null // { row, col }
+    this.lastMove = null
+    this.version = 0
   }
 
   /**
@@ -71,14 +72,13 @@ export class Board {
     this.cells[row][col] = player
     this.moveHistory.push({ row, col, player })
     this.lastMove = { row, col }
+    this.version++
 
-    // 检查胜利
     if (this.checkWin(row, col, player)) {
       this.gameOver = true
       this.winner = player
     }
 
-    // 切换玩家
     this.currentPlayer = this.currentPlayer === 1 ? 2 : 1
 
     return true

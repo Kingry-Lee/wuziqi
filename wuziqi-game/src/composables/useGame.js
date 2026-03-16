@@ -86,13 +86,13 @@ export function useGame() {
     }
   }
 
-  /**
-   * 玩家落子
-   */
   function placePiece(row, col) {
     if (isAIThinking.value || board.value.gameOver) return false
 
-    const success = board.value.placePiece(row, col)
+    const config = configManager.getConfig()
+    const player = config.gameMode === 'ai' ? 1 : board.value.currentPlayer
+    
+    const success = board.value.placePiece(row, col, player)
     
     if (success) {
       if (board.value.gameOver) {
@@ -114,12 +114,12 @@ export function useGame() {
     await new Promise(resolve => setTimeout(resolve, 100))
     
     const config = configManager.getConfig()
-    const player = config.firstPlayer === 'white' ? 1 : 2
+    const aiPlayer = 2
     
-    const move = ai.value.getNextMove(board.value, player)
+    const move = ai.value.getNextMove(board.value, aiPlayer)
     
     if (move) {
-      board.value.placePiece(move.row, move.col, player)
+      board.value.placePiece(move.row, move.col, aiPlayer)
     }
     
     isAIThinking.value = false

@@ -20,6 +20,17 @@
         :style="getPieceStyle(hoverPos)"
       ></div>
     </div>
+    <!-- 游戏结束遮罩 -->
+    <div v-if="boardData.gameOver" class="game-over-overlay">
+      <div class="game-over-content">
+        <div class="winner-announcement">
+          {{ boardData.winner === 1 ? '黑棋' : '白棋' }} 获胜！
+        </div>
+        <button class="restart-btn" @click="handleRestart">
+          🔄 再来一局
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,7 +55,7 @@ const props = defineProps({
 
 defineEmits(['mouseenter', 'mouseleave'])
 
-const { cells, boardSize, currentPlayer, gameOver, lastMove, isAIThinking, placePiece } = useGame()
+const { cells, boardSize, currentPlayer, gameOver, winner, lastMove, isAIThinking, placePiece, restart } = useGame()
 
 const boardContainer = ref(null)
 const boardCanvas = ref(null)
@@ -79,6 +90,7 @@ const boardData = computed(() => {
       boardSize: props.onlineGame.boardSize.value || 15,
       currentPlayer: props.onlineGame.currentPlayer.value || 1,
       gameOver: props.onlineGame.gameOver.value || false,
+      winner: props.onlineGame.winner.value || null,
       lastMove: props.onlineGame.lastMove.value || null,
       isMyTurn: props.onlineGame.isMyTurn.value || false
     }
@@ -89,6 +101,7 @@ const boardData = computed(() => {
     boardSize: boardSize.value,
     currentPlayer: currentPlayer.value,
     gameOver: gameOver.value,
+    winner: winner.value,
     lastMove: lastMove.value,
     isMyTurn: true
   }
@@ -219,6 +232,10 @@ function drawBoard() {
     ctx.arc(x, y, 4, 0, Math.PI * 2)
     ctx.fill()
   }
+}
+
+function handleRestart() {
+  restart()
 }
 
 function handleClick(e) {
@@ -441,6 +458,54 @@ canvas {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.game-over-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.game-over-content {
+  text-align: center;
+  color: #fff;
+}
+
+.winner-announcement {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.restart-btn {
+  padding: 12px 32px;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.restart-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
 .piece {

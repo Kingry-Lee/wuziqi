@@ -31,6 +31,26 @@
         </button>
       </div>
     </div>
+    <!-- 在线模式：对方请求悔棋 -->
+    <div v-if="mode === 'online' && onlineGame && onlineGame.waitingForUndo.value" class="confirm-overlay">
+      <div class="confirm-dialog">
+        <div class="confirm-title">对方请求悔棋</div>
+        <div class="confirm-buttons">
+          <button class="btn-confirm" @click="handleAcceptUndo">同意</button>
+          <button class="btn-reject" @click="handleRejectUndo">拒绝</button>
+        </div>
+      </div>
+    </div>
+    <!-- 在线模式：对方请求重开 -->
+    <div v-if="mode === 'online' && onlineGame && onlineGame.waitingForRestart.value" class="confirm-overlay">
+      <div class="confirm-dialog">
+        <div class="confirm-title">对方请求重开</div>
+        <div class="confirm-buttons">
+          <button class="btn-confirm" @click="handleAcceptRestart">同意</button>
+          <button class="btn-reject" @click="handleRejectRestart">拒绝</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -235,7 +255,35 @@ function drawBoard() {
 }
 
 function handleRestart() {
-  restart()
+  if (props.mode === 'online' && props.onlineGame) {
+    props.onlineGame.requestRestart()
+  } else {
+    restart()
+  }
+}
+
+function handleAcceptUndo() {
+  if (props.onlineGame) {
+    props.onlineGame.acceptUndo()
+  }
+}
+
+function handleRejectUndo() {
+  if (props.onlineGame) {
+    props.onlineGame.rejectUndo()
+  }
+}
+
+function handleAcceptRestart() {
+  if (props.onlineGame) {
+    props.onlineGame.acceptRestart()
+  }
+}
+
+function handleRejectRestart() {
+  if (props.onlineGame) {
+    props.onlineGame.rejectRestart()
+  }
 }
 
 function handleClick(e) {
@@ -466,12 +514,13 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
   animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(4px);
 }
 
 @keyframes fadeIn {
@@ -481,31 +530,45 @@ canvas {
 
 .game-over-content {
   text-align: center;
-  color: #fff;
+  padding: 30px 50px;
+  background: var(--color-panel, rgba(30, 30, 50, 0.95));
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--color-accent, #667eea);
 }
 
 .winner-announcement {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: var(--color-accent, #667eea);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 20px var(--color-accent, rgba(102, 126, 234, 0.5));
 }
 
 .restart-btn {
-  padding: 12px 32px;
-  font-size: 1.2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 14px 40px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-secondary, #764ba2) 100%);
+  color: var(--color-text, #ffffff);
   border: none;
-  border-radius: 30px;
+  border-radius: var(--border-radius-button, 20px);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .restart-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+}
+
+.restart-btn:active {
+  transform: translateY(0);
 }
 
 .piece {
@@ -567,5 +630,79 @@ canvas {
 
 .hover-piece.white {
   background: radial-gradient(circle at 30% 30%, #fff, var(--color-white-piece));
+}
+
+/* 确认对话框样式 */
+.confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(2px);
+}
+
+.confirm-dialog {
+  background: var(--color-panel, rgba(30, 30, 50, 0.95));
+  border-radius: 16px;
+  padding: 24px 36px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 2px solid var(--color-accent, #667eea);
+  animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.confirm-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-panel-text, #fff);
+  margin-bottom: 20px;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-confirm, .btn-reject {
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius-button, 20px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-secondary, #764ba2) 100%);
+  color: var(--color-text, #fff);
+}
+
+.btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-reject {
+  background: var(--color-button, rgba(255,255,255,0.1));
+  color: var(--color-panel-text, #fff);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.2));
+}
+
+.btn-reject:hover {
+  background: var(--color-button-hover, rgba(255,255,255,0.2));
 }
 </style>

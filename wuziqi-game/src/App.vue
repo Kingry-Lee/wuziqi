@@ -91,25 +91,62 @@ function openPipMode() {
 window.addEventListener('message', (e) => {
   if (e.data.type === 'pip-click') {
     const { row, col } = e.data
-    if (!gameOver.value && !isAIThinking.value) {
-      placePiece(row, col)
+    if (gameMode.value === 'online') {
+      // 在线模式
+      if (!onlineGame.gameOver.value && onlineGame.isMyTurn.value) {
+        onlineGame.placePiece(row, col)
+      }
+    } else {
+      // AI/本地模式
+      if (!gameOver.value && !isAIThinking.value) {
+        placePiece(row, col)
+      }
     }
   }
 })
 
-// 监听 board.version 变化来触发 PiP 更新
+// AI模式：监听 board 变化
 watch(() => board.value.version, () => {
-  pipData.value = {
-    cells: board.value.cells.map(row => [...row]),
-    lastMove: board.value.lastMove ? JSON.parse(JSON.stringify(board.value.lastMove)) : null
-  }
-  if (pipWindow && !pipWindow.closed) {
-    updatePipBoard()
+  if (gameMode.value !== 'online') {
+    pipData.value = {
+      cells: board.value.cells.map(row => [...row]),
+      lastMove: board.value.lastMove ? JSON.parse(JSON.stringify(board.value.lastMove)) : null
+    }
+    if (pipWindow && !pipWindow.closed) {
+      updatePipBoard()
+    }
   }
 }, { immediate: true })
 
-watch(() => board.value.lastMove, () => {
-  updatePipBoard()
+// 在线模式：监听 onlineGame.cells 变化
+watch(() => onlineGame.cells.value, () => {
+  if (gameMode.value === 'online') {
+    pipData.value = {
+      cells: onlineGame.cells.value.map(row => [...row]),
+      lastMove: onlineGame.lastMove.value ? JSON.parse(JSON.stringify(onlineGame.lastMove.value)) : null
+    }
+    if (pipWindow && !pipWindow.closed) {
+      updatePipBoard()
+    }
+  }
+}, { deep: true, immediate: true })
+
+// 监听游戏模式变化，切换 PiP 数据源
+watch(gameMode, (newMode) => {
+  if (pipWindow && !pipWindow.closed) {
+    if (newMode === 'online') {
+      pipData.value = {
+        cells: onlineGame.cells.value.map(row => [...row]),
+        lastMove: onlineGame.lastMove.value ? JSON.parse(JSON.stringify(onlineGame.lastMove.value)) : null
+      }
+    } else {
+      pipData.value = {
+        cells: board.value.cells.map(row => [...row]),
+        lastMove: board.value.lastMove ? JSON.parse(JSON.stringify(board.value.lastMove)) : null
+      }
+    }
+    updatePipBoard()
+  }
 })
 
 watch(currentTheme, () => {

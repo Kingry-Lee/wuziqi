@@ -135,28 +135,8 @@ io.on('connection', (socket) => {
     const blackPlayer = room.hostColor === 'black' ? hostPlayer : finalGuestPlayer;
     room.currentPlayer = blackPlayer;
     
-    console.log('[Join] Player assignment:', { hostColor: room.hostColor, hostPlayer: room.hostPlayer, guestColor: room.guestColor, guestPlayer: room.guestPlayer, blackPlayer, currentPlayer: room.currentPlayer });
-    
     // 通知房主有玩家加入
     io.to(room.host).emit('player-joined', { player: 2 });
-    
-    // 通知双方游戏可以开始
-    io.to(roomId).emit('game-start', {
-      boardSize: room.boardSize,
-      currentPlayer: room.currentPlayer,
-      hostColor: room.hostColor,
-      guestColor: room.guestColor,
-      blackPlayer: room.hostColor === 'black' ? room.hostPlayer : room.guestPlayer
-    });
-    
-    console.log('Player joined room:', roomId, {
-      hostColor: room.hostColor,
-      guestColor: room.guestColor,
-      hostPlayer: room.hostPlayer,
-      guestPlayer: room.guestPlayer,
-      blackPlayer: (room.hostColor === 'black' ? room.hostPlayer : room.guestPlayer),
-      currentPlayer: room.currentPlayer
-    });
     
     callback({ 
       success: true, 
@@ -165,15 +145,20 @@ io.on('connection', (socket) => {
       boardSize: room.boardSize,
       host: room.host
     });
+    
+    io.to(roomId).emit('game-start', {
+      boardSize: room.boardSize,
+      currentPlayer: room.currentPlayer,
+      hostColor: room.hostColor,
+      guestColor: room.guestColor,
+      blackPlayer: room.hostColor === 'black' ? room.hostPlayer : room.guestPlayer
+    });
   });
 
   // 落子
   socket.on('place-piece', (data, callback) => {
     const { row, col, player } = data;
     const roomId = socket.roomId;
-    const socketPlayer = socket.player;
-    
-    console.log('[PlacePiece] Request:', { roomId, player, socketPlayer, currentPlayer: rooms.get(roomId)?.currentPlayer });
     
     if (!roomId) {
       callback?.({ success: false, error: '未在房间中' });
@@ -188,7 +173,6 @@ io.on('connection', (socket) => {
     
     // 验证是否是当前玩家
     if (player !== room.currentPlayer) {
-      console.log('[PlacePiece] Rejected - not your turn:', { player, currentPlayer: room.currentPlayer });
       callback?.({ success: false, error: '不是你的回合' });
       return;
     }

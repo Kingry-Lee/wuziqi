@@ -48,8 +48,7 @@ export function useOnlineGame() {
 
     // 游戏开始
     socket.value.on('game-start', (data) => {
-      console.log('[online] game-start data:', data)
-      console.log('[online] my player.value:', player.value)
+      console.log('[online] game-start data:', data, 'my player:', player.value)
       gameStarted.value = true
       board.value.reset(data.boardSize)
       updateTurn(data.currentPlayer)

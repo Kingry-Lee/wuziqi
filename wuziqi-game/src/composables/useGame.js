@@ -12,11 +12,13 @@ const board = ref(new Board(15))
 const ai = ref(new AI('normal'))
 const isAIThinking = ref(false)
 const gameStats = reactive({
-  blackTime: 0, // 黑棋用时（秒）
-  whiteTime: 0, // 白棋用时（秒）
+  blackTime: 0,
+  whiteTime: 0,
   startTime: null,
   currentTurnTime: 0,
 })
+
+const gameStarted = ref(false)
 
 let timerInterval = null
 
@@ -27,13 +29,10 @@ export function useGame() {
   function initGame() {
     const config = configManager.getConfig()
     
-    // 设置棋盘大小
     board.value.reset(config.boardSize)
     
-    // 设置AI难度
     ai.value.setDifficulty(config.aiDifficulty)
     
-    // 设置先手
     if (config.firstPlayer === 'random') {
       board.value.currentPlayer = Math.random() < 0.5 ? 1 : 2
     } else if (config.firstPlayer === 'white') {
@@ -42,13 +41,18 @@ export function useGame() {
       board.value.currentPlayer = 1
     }
 
-    // 重置计时
     gameStats.blackTime = 0
     gameStats.whiteTime = 0
     gameStats.startTime = Date.now()
     gameStats.currentTurnTime = 0
 
-    // 开始计时
+    stopTimer()
+    gameStarted.value = false
+  }
+
+  function startGame() {
+    gameStats.startTime = Date.now()
+    gameStarted.value = true
     startTimer()
   }
 
@@ -280,6 +284,7 @@ export function useGame() {
     board,
     isAIThinking,
     gameStats,
+    gameStarted,
     
     // 计算属性
     currentPlayer,
@@ -293,6 +298,7 @@ export function useGame() {
     
     // 方法
     initGame,
+    startGame,
     placePiece,
     undo,
     restart,

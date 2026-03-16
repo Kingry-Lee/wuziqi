@@ -10,7 +10,7 @@ import { useOnlineGame } from './composables/useOnlineGame'
 import { applyTheme, getTheme } from './logic/themes'
 import { getPipHtml } from './logic/pip'
 
-const { initGame, setConfig, getConfig, undo, placePiece, gameOver, isAIThinking, cells, lastMove, board } = useGame()
+const { initGame, startGame, setConfig, getConfig, undo, placePiece, gameOver, isAIThinking, cells, lastMove, board, gameStarted } = useGame()
 const onlineGame = useOnlineGame()
 
 // 专门用于 PiP 同步的数据
@@ -175,6 +175,10 @@ function handleZenUndo() {
   undo()
 }
 
+function handleStartGame() {
+  startGame()
+}
+
 onMounted(() => {
   initGame()
   applyCurrentTheme()
@@ -289,6 +293,12 @@ provide('currentTheme', currentTheme)
           :onlineGame="gameMode === 'online' ? onlineGame : null" 
           :zenMode="zenMode"
         />
+        <!-- 开始游戏按钮 -->
+        <div v-if="gameMode === 'ai' && !gameStarted" class="start-game-overlay">
+          <button class="start-game-btn" @click="handleStartGame">
+            开始对战
+          </button>
+        </div>
       </div>
       
       <!-- ZEN 模式缩放控制 - 固定定位，不随棋盘缩放 -->
@@ -657,5 +667,45 @@ html.zen-mode, html.zen-mode body {
   color: #666;
   font-size: 14px;
   font-family: monospace;
+}
+
+/* 开始游戏遮罩 */
+.start-game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.start-game-btn {
+  padding: 18px 48px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-secondary, #764ba2) 100%);
+  color: var(--color-text, #ffffff);
+  border: none;
+  border-radius: var(--border-radius-button, 30px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.start-game-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.7);
+}
+
+.start-game-btn:active {
+  transform: translateY(0);
 }
 </style>

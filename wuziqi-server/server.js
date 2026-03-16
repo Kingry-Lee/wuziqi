@@ -135,6 +135,8 @@ io.on('connection', (socket) => {
     const blackPlayer = room.hostColor === 'black' ? hostPlayer : finalGuestPlayer;
     room.currentPlayer = blackPlayer;
     
+    console.log('[Join] Player assignment:', { hostColor: room.hostColor, hostPlayer: room.hostPlayer, guestColor: room.guestColor, guestPlayer: room.guestPlayer, blackPlayer, currentPlayer: room.currentPlayer });
+    
     // 通知房主有玩家加入
     io.to(room.host).emit('player-joined', { player: 2 });
     
@@ -169,6 +171,9 @@ io.on('connection', (socket) => {
   socket.on('place-piece', (data, callback) => {
     const { row, col, player } = data;
     const roomId = socket.roomId;
+    const socketPlayer = socket.player;
+    
+    console.log('[PlacePiece] Request:', { roomId, player, socketPlayer, currentPlayer: rooms.get(roomId)?.currentPlayer });
     
     if (!roomId) {
       callback?.({ success: false, error: '未在房间中' });
@@ -183,6 +188,7 @@ io.on('connection', (socket) => {
     
     // 验证是否是当前玩家
     if (player !== room.currentPlayer) {
+      console.log('[PlacePiece] Rejected - not your turn:', { player, currentPlayer: room.currentPlayer });
       callback?.({ success: false, error: '不是你的回合' });
       return;
     }

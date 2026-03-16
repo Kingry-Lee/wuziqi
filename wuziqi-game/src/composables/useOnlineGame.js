@@ -49,9 +49,9 @@ export function useOnlineGame() {
     // 游戏开始
     socket.value.on('game-start', (data) => {
       console.log('[online] game-start data:', data)
+      console.log('[online] my player.value:', player.value)
       gameStarted.value = true
       board.value.reset(data.boardSize)
-    // 更新回合信息，若 data.currentPlayer 未解析正确，则兜底为黑棋方
       updateTurn(data.currentPlayer)
     })
 

@@ -310,5 +310,29 @@
     "totalTime": 0,
     "roomId": "W6KODU",
     "ip": "::ffff:142.91.102.226"
+  },
+  {
+    "id": 1773652219682,
+    "date": "2026-03-16T09:10:19.682Z",
+    "gameMode": "online",
+    "playerColor": "黑棋",
+    "result": "失败",
+    "winner": "白棋",
+    "totalMoves": 0,
+    "totalTime": 0,
+    "roomId": "H3OFB3",
+    "ip": "::ffff:121.34.51.107"
+  },
+  {
+    "id": 1773652220301,
+    "date": "2026-03-16T09:10:20.301Z",
+    "gameMode": "online",
+    "playerColor": "白棋",
+    "result": "胜利",
+    "winner": "白棋",
+    "totalMoves": 0,
+    "totalTime": 0,
+    "roomId": "H3OFB3",
+    "ip": "::ffff:142.91.102.226"
   }
 ]

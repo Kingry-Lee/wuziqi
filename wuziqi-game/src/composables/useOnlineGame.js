@@ -141,6 +141,7 @@ export function useOnlineGame() {
 
   // 更新回合
   function updateTurn(currentPlayer) {
+    console.log('[updateTurn] currentPlayer:', currentPlayer, 'player.value:', player.value, 'isMyTurn will be:', currentPlayer === player.value)
     isMyTurn.value = currentPlayer === player.value
   }
 
@@ -181,6 +182,7 @@ export function useOnlineGame() {
 
   // 落子
   function placePiece(row, col) {
+    console.log('[placePiece] called, gameStarted:', gameStarted.value, 'gameOver:', gameOver.value, 'isMyTurn:', isMyTurn.value, 'player:', player.value)
     if (!gameStarted.value || gameOver.value || !isMyTurn.value) return false
     
     // 检查位置是否有效
@@ -193,6 +195,7 @@ export function useOnlineGame() {
     isMyTurn.value = false // 先设为不是自己的回合，等待服务器响应
     
     socket.value.emit('place-piece', { row, col, player: player.value }, (response) => {
+      console.log('[placePiece] response:', response)
       if (!response.success) {
         // 如果服务器失败，回滚本地更新
         board.value.cells[row][col] = 0

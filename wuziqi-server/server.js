@@ -54,35 +54,48 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // 创建房间
-  socket.on('create-room', (callback) => {
+  socket.on('create-room', (payload, callback) => {
     const roomId = generateRoomId();
+    // 颜色分配：black / white / random
+    let hostColor = 'black';
+    const colorRequest = payload?.color ?? 'black';
+    if (colorRequest === 'random') {
+      hostColor = Math.random() < 0.5 ? 'black' : 'white';
+    } else {
+      hostColor = (colorRequest === 'black' || colorRequest === 'white') ? colorRequest : 'black';
+    }
+    const hostColorIsBlack = hostColor === 'black';
+    const hostPlayer = hostColorIsBlack ? 1 : 2;
     const room = {
       id: roomId,
       host: socket.id,
       guest: null,
       gameState: null,
-      currentPlayer: 1,
+      currentPlayer: hostPlayer,
       boardSize: 15,
       createdAt: Date.now()
     };
-    
+    // 记录颜色分配信息
+    room.hostColor = hostColor
+    room.guestColor = null
+    room.hostPlayer = hostPlayer
     rooms.set(roomId, room);
     socket.join(roomId);
     socket.roomId = roomId;
-    socket.player = 1; // 房主是黑棋
+    socket.player = hostPlayer; // 房主的棋子颜色由 hostPlayer 决定
     
     console.log('Room created:', roomId);
     
     callback({ 
       success: true, 
       roomId, 
-      player: 1,
+      player: hostPlayer,
       boardSize: room.boardSize
     });
   });
 
   // 加入房间
-  socket.on('join-room', (roomId, callback) => {
+  socket.on('join-room', (roomId, payload, callback) => {
     const room = rooms.get(roomId);
     
     if (!room) {
@@ -94,11 +107,32 @@ io.on('connection', (socket) => {
       callback({ success: false, error: '房间已满' });
       return;
     }
-    
+    // 根据来宾的颜色偏好分配给客人
+    const guestColorRequest = payload?.color ?? 'white';
+    let guestColor = guestColorRequest;
+    if (guestColor === 'random') {
+      guestColor = room.hostColor === 'black' ? 'white' : 'black';
+    } else if (guestColor !== 'black' && guestColor !== 'white') {
+      guestColor = room.hostColor === 'black' ? 'white' : 'black';
+    }
+    const guestColorIsBlack = guestColor === 'black';
+    const guestPlayer = guestColorIsBlack ? 1 : 2;
+    if (guestColor === room.hostColor) {
+      guestColor = room.hostColor === 'black' ? 'white' : 'black';
+    }
+    const finalGuestColorIsBlack = guestColor === 'black';
+    const finalGuestPlayer = finalGuestColorIsBlack ? 1 : 2;
+
     room.guest = socket.id;
     socket.join(roomId);
     socket.roomId = roomId;
-    socket.player = 2; // 访客是白棋
+    socket.player = finalGuestPlayer; // 来宾的棋子颜色由最终分配的 player 决定
+    room.guestColor = guestColor;
+    room.guestPlayer = finalGuestPlayer;
+    // 重新计算谁是黑棋并设为先手
+    const hostPlayer = room.hostPlayer || (room.hostColor === 'black' ? 1 : 2);
+    const blackPlayer = room.hostColor === 'black' ? hostPlayer : finalGuestPlayer;
+    room.currentPlayer = blackPlayer;
     
     // 通知房主有玩家加入
     io.to(room.host).emit('player-joined', { player: 2 });
@@ -106,15 +140,25 @@ io.on('connection', (socket) => {
     // 通知双方游戏可以开始
     io.to(roomId).emit('game-start', {
       boardSize: room.boardSize,
-      currentPlayer: room.currentPlayer
+      currentPlayer: room.currentPlayer,
+      hostColor: room.hostColor,
+      guestColor: room.guestColor,
+      blackPlayer: room.hostColor === 'black' ? room.hostPlayer : room.guestPlayer
     });
     
-    console.log('Player joined room:', roomId);
+    console.log('Player joined room:', roomId, {
+      hostColor: room.hostColor,
+      guestColor: room.guestColor,
+      hostPlayer: room.hostPlayer,
+      guestPlayer: room.guestPlayer,
+      blackPlayer: (room.hostColor === 'black' ? room.hostPlayer : room.guestPlayer),
+      currentPlayer: room.currentPlayer
+    });
     
     callback({ 
       success: true, 
       roomId, 
-      player: 2,
+      player: finalGuestPlayer,
       boardSize: room.boardSize,
       host: room.host
     });

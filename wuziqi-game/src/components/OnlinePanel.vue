@@ -36,9 +36,25 @@
     <div v-else-if="!roomId" class="room-section">
       <h3>在线对战</h3>
       
+      <!-- 颜色选择（房主） - 以美观的色块展示，风格化后的房主颜色选择 -->
+      <div class="color-selection">
+        <div class="setting-label" style="margin-bottom:8px;">房主颜色</div>
+        <div class="color-swatches" aria-label="房主颜色">
+          <button class="swatch sw-black" :class="{ selected: hostColor==='black' }" @click="hostColor='black'" aria-label="黑棋"></button>
+          <button class="swatch sw-white" :class="{ selected: hostColor==='white' }" @click="hostColor='white'" aria-label="白棋"></button>
+          <button class="swatch sw-random" :class="{ selected: hostColor==='random' }" @click="hostColor='random'" aria-label="随机"></button>
+        </div>
+        <div class="swatch-labels" aria-hidden="true">
+          <span>黑棋</span><span>白棋</span><span>随机</span>
+        </div>
+        <div class="color-current-label" style="margin-top:6px; font-size:12px; color:var(--color-panel-text);">
+          当前选择：{{ hostColor === 'random' ? '随机' : hostColor === 'black' ? '黑棋' : '白棋' }}
+        </div>
+      </div>
+
       <!-- 创建房间 -->
       <div class="create-room">
-        <button @click="handleCreateRoom" class="btn btn-primary" :disabled="creating">
+        <button @click="handleCreateRoomWithColor" class="btn btn-primary" :disabled="creating">
           {{ creating ? '创建中...' : '创建房间' }}
         </button>
       </div>
@@ -51,9 +67,9 @@
           v-model="joinRoomId" 
           placeholder="输入房间号"
           class="input"
-          @keyup.enter="handleJoinRoom"
+          @keyup.enter="handleJoinRoomWithColor"
         />
-        <button @click="handleJoinRoom" class="btn btn-secondary" :disabled="joining || !joinRoomId">
+        <button @click="handleJoinRoomWithColor" class="btn btn-secondary" :disabled="joining || !joinRoomId">
           {{ joining ? '加入中...' : '加入' }}
         </button>
       </div>
@@ -158,7 +174,11 @@ const onlineGame = inject('onlineGame')
 const changeTheme = inject('changeTheme')
 const currentTheme = inject('currentTheme')
 
-const {
+// 新增：颜色选择（房主/来宾）
+const hostColor = ref('random')
+const guestColor = ref('random')
+
+ const {
   connected,
   roomId,
   player,
@@ -193,6 +213,31 @@ function handleThemeChange(themeName) {
   changeTheme(themeName)
 }
 
+function handleCreateRoomWithColor() {
+  // 使用房主颜色选项创建房间
+  creating.value = true
+  error.value = null
+  createRoom((response) => {
+    creating.value = false
+    if (!response.success) {
+      error.value = response.error
+    }
+  }, hostColor.value)
+}
+
+function handleJoinRoomWithColor() {
+  // 使用来宾颜色选项加入房间
+  if (!joinRoomId.value) return
+  joining.value = true
+  error.value = null
+  joinRoom(joinRoomId.value, (response) => {
+    joining.value = false
+    if (!response.success) {
+      error.value = response.error
+    }
+  }, guestColor.value)
+}
+
 async function handleConnect() {
   connecting.value = true
   error.value = null
@@ -215,15 +260,9 @@ function handleCreateRoom() {
 }
 
 function handleJoinRoom() {
-  if (!joinRoomId.value) return
-  joining.value = true
-  error.value = null
-  joinRoom(joinRoomId.value, (response) => {
-    joining.value = false
-    if (!response.success) {
-      error.value = response.error
-    }
-  })
+  // 使用颜色选项进行加入房间的包装调用
+  handleJoinRoomWithColor()
+  // 加入过程的回传与状态通过 handleJoinRoomWithColor 内部逻辑处理
 }
 
 function leaveRoom() {
@@ -534,4 +573,13 @@ h3 {
   gap: 8px;
   margin-top: 16px;
 }
+/* 颜色选择 UI 皮肤化，为不同 UI 风格提供可定制化的颜色块选择 */
+.color-selection { text-align: center; padding: 8px 0; }
+.color-swatches { display: inline-flex; gap: 10px; justify-content: center; align-items: center; }
+.swatch { width: 46px; height: 28px; border-radius: 6px; border: 2px solid transparent; box-shadow: 0 2px 6px rgba(0,0,0,.2); cursor: pointer; }
+.swatch.selected { outline: 4px solid var(--color-accent); outline-offset: 0; }
+.sw-black { background: #111; }
+.sw-white { background: #fff; border: 1px solid #ddd; }
+.sw-random { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); }
+.swatch-labels { display: flex; justify-content: center; gap: 40px; font-size: 12px; color: var(--color-panel-text); margin-top: 6px; }
 </style>

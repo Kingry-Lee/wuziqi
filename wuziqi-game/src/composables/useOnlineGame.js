@@ -26,8 +26,9 @@ export function useOnlineGame() {
   function connect(serverUrl = DEFAULT_SERVER_URL) {
     if (socket.value?.connected) return
 
+    // 优先使用轮询，以降低 websocket 受网络/代理限制导致的连接失败风险
     socket.value = io(serverUrl, {
-      transports: ['websocket', 'polling']
+      transports: ['polling', 'websocket']
     })
 
     socket.value.on('connect', () => {
@@ -47,8 +48,10 @@ export function useOnlineGame() {
 
     // 游戏开始
     socket.value.on('game-start', (data) => {
+      console.log('[online] game-start data:', data)
       gameStarted.value = true
       board.value.reset(data.boardSize)
+    // 更新回合信息，若 data.currentPlayer 未解析正确，则兜底为黑棋方
       updateTurn(data.currentPlayer)
     })
 
@@ -143,13 +146,13 @@ export function useOnlineGame() {
   }
 
   // 创建房间
-  function createRoom(callback) {
+  function createRoom(callback, color) {
     if (!socket.value) {
       callback?.({ success: false, error: '未连接到服务器' })
       return
     }
 
-    socket.value.emit('create-room', (response) => {
+    socket.value.emit('create-room', { color }, (response) => {
       if (response.success) {
         roomId.value = response.roomId
         player.value = response.player
@@ -160,14 +163,14 @@ export function useOnlineGame() {
   }
 
   // 加入房间
-  function joinRoom(inputRoomId, callback) {
+  function joinRoom(inputRoomId, callback, color) {
     if (!socket.value) {
       callback?.({ success: false, error: '未连接到服务器' })
       return
     }
 
     const targetRoomId = inputRoomId.toUpperCase()
-    socket.value.emit('join-room', targetRoomId, (response) => {
+    socket.value.emit('join-room', targetRoomId, { color }, (response) => {
       if (response.success) {
         roomId.value = response.roomId
         player.value = response.player

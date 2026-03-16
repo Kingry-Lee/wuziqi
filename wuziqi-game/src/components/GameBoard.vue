@@ -650,12 +650,13 @@ canvas {
 
 .confirm-dialog {
   background: var(--color-panel, rgba(30, 30, 50, 0.95));
-  border-radius: 16px;
-  padding: 24px 36px;
+  border-radius: 18px;
+  padding: 28px 40px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   border: 2px solid var(--color-accent, #667eea);
   animation: scaleIn 0.2s ease;
+  min-width: 320px;
 }
 
 @keyframes scaleIn {
@@ -672,13 +673,13 @@ canvas {
 
 .confirm-buttons {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   justify-content: center;
 }
 
 .btn-confirm, .btn-reject {
-  padding: 10px 24px;
-  font-size: 0.95rem;
+  padding: 12px 28px;
+  font-size: 1rem;
   font-weight: 600;
   border: none;
   border-radius: var(--border-radius-button, 20px);

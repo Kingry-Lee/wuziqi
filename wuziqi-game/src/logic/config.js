@@ -6,7 +6,7 @@ const HISTORY_KEY = 'wuziqi-history'
 
 export const defaultConfig = {
   boardSize: 15,
-  firstPlayer: 'black',
+  firstPlayer: 'white',
   forbiddenMode: false,
   winCondition: 5,
   undoCount: -1,

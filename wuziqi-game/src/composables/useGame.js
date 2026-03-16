@@ -54,6 +54,10 @@ export function useGame() {
     gameStats.startTime = Date.now()
     gameStarted.value = true
     startTimer()
+    
+    if (configManager.getConfig().gameMode === 'ai' && board.value.currentPlayer === 2) {
+      makeAIMove()
+    }
   }
 
   /**

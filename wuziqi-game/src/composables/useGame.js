@@ -98,21 +98,12 @@ export function useGame() {
       if (board.value.gameOver) {
         stopTimer()
         saveToHistory()
-        swapFirstPlayer()
       } else if (board.value.currentPlayer === 2 && configManager.getConfig().gameMode === 'ai') {
         makeAIMove()
       }
     }
 
     return success
-  }
-
-  function swapFirstPlayer() {
-    const config = configManager.getConfig()
-    if (config.gameMode === 'ai') {
-      const newFirst = config.firstPlayer === 'white' ? 'black' : 'white'
-      configManager.setConfig('firstPlayer', newFirst)
-    }
   }
 
   async function makeAIMove() {
@@ -136,7 +127,6 @@ export function useGame() {
     if (board.value.gameOver) {
       stopTimer()
       saveToHistory()
-      swapFirstPlayer()
     }
   }
 
@@ -175,8 +165,8 @@ export function useGame() {
     board.value.winner = board.value.currentPlayer === 1 ? 2 : 1
     stopTimer()
     
+    // 记录到历史
     saveToHistory()
-    swapFirstPlayer()
   }
 
   function saveToHistory() {

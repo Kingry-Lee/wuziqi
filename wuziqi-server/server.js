@@ -79,6 +79,7 @@ io.on('connection', (socket) => {
     room.hostColor = hostColor
     room.guestColor = null
     room.hostPlayer = hostPlayer
+    room.gameHistory = [] // 记录每局颜色分配
     rooms.set(roomId, room);
     socket.join(roomId);
     socket.roomId = roomId;
@@ -211,6 +212,15 @@ io.on('connection', (socket) => {
     if (checkWin(room.gameState.cells, row, col, player, room.boardSize)) {
       room.gameState.gameOver = true;
       room.gameState.winner = player;
+      room.gameHistory = room.gameHistory || []
+      room.gameHistory.push({
+        hostColor: room.hostColor,
+        hostPlayer: room.hostPlayer,
+        guestColor: room.guestColor,
+        guestPlayer: room.guestPlayer,
+        winner: player,
+        timestamp: Date.now()
+      })
       io.to(roomId).emit('game-over', { winner: player });
     } else {
       // 切换玩家
@@ -279,6 +289,16 @@ io.on('connection', (socket) => {
       gameOver: true,
       winner
     };
+    room.gameHistory = room.gameHistory || []
+    room.gameHistory.push({
+      hostColor: room.hostColor,
+      hostPlayer: room.hostPlayer,
+      guestColor: room.guestColor,
+      guestPlayer: room.guestPlayer,
+      winner: winner,
+      resigned: true,
+      timestamp: Date.now()
+    })
     
     io.to(roomId).emit('game-over', { winner, resigned: true });
     callback?.({ success: true });
@@ -300,13 +320,32 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
     
-    // 重置游戏状态
+    let newHostColor
+    const history = room.gameHistory || []
+    const lastGame = history[history.length - 1]
+    
+    if (lastGame) {
+      newHostColor = lastGame.hostColor === 'black' ? 'white' : 'black'
+    } else {
+      newHostColor = 'black'
+    }
+    
+    room.hostColor = newHostColor
+    room.hostPlayer = newHostColor === 'black' ? 1 : 2
+    room.guestColor = newHostColor === 'black' ? 'white' : 'black'
+    room.guestPlayer = newHostColor === 'black' ? 2 : 1
+    
+    const blackPlayer = room.hostColor === 'black' ? room.hostPlayer : room.guestPlayer
+    
     room.gameState = null;
-    room.currentPlayer = 1;
+    room.currentPlayer = blackPlayer;
     
     io.to(roomId).emit('game-restarted', {
       boardSize: room.boardSize,
-      currentPlayer: 1
+      currentPlayer: blackPlayer,
+      hostColor: room.hostColor,
+      guestColor: room.guestColor,
+      blackPlayer: blackPlayer
     });
     
     callback?.({ success: true });
